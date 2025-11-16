@@ -340,6 +340,8 @@ https://github.com/S-Lab-System-Group/HeliosData
 
 https://github.com/Azure/AzurePublicDataset/
 
+https://github.com/GestaltCogTeam/BasicTS
+
 https://github.com/thuml/Time-Series-Library
 
 https://github.com/MachineLearningSystem/26ASPLOS-Spot

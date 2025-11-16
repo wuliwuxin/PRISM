@@ -328,7 +328,26 @@ with torch.no_grad():
   year={2025}
 }
 ``` -->
+## Contact
+
+If you have any questions or want to use the code, please contact wu1351658806@163.com.
+
+## Acknowledgement
+
+We appreciate the following github repos a lot for their valuable code base or datasets:
+
+https://github.com/S-Lab-System-Group/HeliosData
+
+https://github.com/Azure/AzurePublicDataset/
+
+https://github.com/thuml/Time-Series-Library
+
+https://github.com/MachineLearningSystem/26ASPLOS-Spot
+
+https://github.com/EdgeBigBang/KDD25_MetaEformer
+
 
 ## Contributing
 
 Contributions welcome! Please open an issue or submit a pull request.
+

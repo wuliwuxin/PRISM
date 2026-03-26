@@ -68,7 +68,13 @@ def quick_start_example(mode='total', pred_len=24, run_ablation=False):
 
     # 4. Create dataset and loaders
     print("\n[4/5] Creating datasets...")
-    dataset = GPUDemandDataset(data_array, config.seq_len, pred_len, mode)
+    dataset = GPUDemandDataset(
+        data_array,
+        config.seq_len,
+        pred_len,
+        mode,
+        time_window_seconds=config.time_window
+    )
 
     total_size = len(dataset)
     train_size = int(0.7 * total_size)
@@ -96,6 +102,7 @@ def quick_start_example(mode='total', pred_len=24, run_ablation=False):
     model = PRISM(
         seq_len=config.seq_len,
         pred_len=pred_len,
+        n_channels=len(channel_names),
         d_model=config.d_model,
         n_heads=config.n_heads,
         e_layers=config.e_layers,
@@ -180,49 +187,32 @@ def visualize_results(pred_file, target_file, save_path, max_samples=500):
     targets = targets[:max_samples]
 
     # Set global styles
-    plt.rcParams['font.size'] = 20
-    plt.rcParams['axes.labelsize'] = 22
-    plt.rcParams['axes.titlesize'] = 24
-    plt.rcParams['legend.fontsize'] = 18
+    plt.rcParams['font.size'] = 28
+    plt.rcParams['axes.labelsize'] = 30
+    plt.rcParams['axes.titlesize'] = 34
+    plt.rcParams['legend.fontsize'] = 26
+    plt.rcParams['xtick.labelsize'] = 26
+    plt.rcParams['ytick.labelsize'] = 26
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['axes.facecolor'] = 'white'
 
-    fig, axes = plt.subplots(2, 1, figsize=(15, 10), facecolor='white')
+    # Only keep waveform comparison (upper plot)
+    fig, ax = plt.subplots(1, 1, figsize=(18, 7), facecolor='white')
 
     # Waveform comparison
     x = np.arange(len(predictions))
-    axes[0].plot(x, targets, label='Ground Truth', color='#2E86C1', linewidth=1.5, alpha=0.8)
-    axes[0].plot(x, predictions, label='Predictions', color='#E74C3C', linewidth=1.5, alpha=0.7)
-    axes[0].fill_between(x, predictions, targets, alpha=0.2, color='gray')
-    axes[0].set_xlabel('Time Step', fontsize=22)
-    axes[0].set_ylabel('GPU Demand', fontsize=22)
-    axes[0].set_title('Prediction vs Ground Truth', fontsize=24, fontweight='bold')
-    axes[0].legend(fontsize=18, loc='best', framealpha=0.7, facecolor='white')
-    axes[0].tick_params(axis='both', which='major', labelsize=20)
-    axes[0].grid(True, alpha=0.3)
-    axes[0].set_facecolor('white')
+    ax.plot(x, targets, label='Ground Truth', color='#2E86C1', linewidth=2.5, alpha=0.85)
+    ax.plot(x, predictions, label='Predictions', color='#E74C3C', linewidth=2.5, alpha=0.75)
+    ax.fill_between(x, predictions, targets, alpha=0.18, color='gray')
+    ax.set_xlabel('Time Step')
+    ax.set_ylabel('GPU Demand')
+    ax.set_title('Prediction vs Ground Truth', fontweight='bold')
+    ax.legend(loc='best', framealpha=0.75, facecolor='white')
+    ax.grid(True, alpha=0.25)
+    ax.set_facecolor('white')
 
-    # Error distribution
-    errors = predictions - targets
-    axes[1].hist(errors, bins=50, color='coral', alpha=0.7, edgecolor='black')
-    axes[1].axvline(x=0, color='red', linestyle='--', linewidth=2)
-    axes[1].set_xlabel('Prediction Error', fontsize=22)
-    axes[1].set_ylabel('Frequency', fontsize=22)
-    axes[1].set_title('Error Distribution', fontsize=24, fontweight='bold')
-    axes[1].tick_params(axis='both', which='major', labelsize=20)
-    axes[1].grid(True, alpha=0.3, axis='y')
-    axes[1].set_facecolor('white')
-
-    # Statistics
-    mae = np.mean(np.abs(errors))
-    rmse = np.sqrt(np.mean(errors**2))
-    axes[1].text(0.02, 0.98, f'MAE: {mae:.2f}\nRMSE: {rmse:.2f}',
-                transform=axes[1].transAxes, fontsize=18,
-                verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
-
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
+    plt.tight_layout(pad=1.0)
+    plt.savefig(save_path, dpi=350, bbox_inches='tight', facecolor='white')
     plt.close()
     print(f"  ✓ Visualization saved: {save_path}")
 

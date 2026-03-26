@@ -129,8 +129,10 @@ class GPUDataProcessor:
         org_col = 'organization' if 'organization' in self.job_df.columns else 'user_group'
 
         # Find top N organizations by total GPU usage
-        org_gpu_usage = (self.job_df.groupby(org_col)['gpu_request'] *
-                         self.job_df.groupby(org_col)['worker_num']).sum()
+        # NOTE: Don't multiply groupby objects directly (pandas doesn't support it).
+        # Instead, compute per-job total GPU demand first, then aggregate by organization.
+        tmp = self.job_df.assign(_gpu_total=self.job_df['gpu_request'] * self.job_df['worker_num'])
+        org_gpu_usage = tmp.groupby(org_col)['_gpu_total'].sum()
         top_orgs = org_gpu_usage.nlargest(top_n).index.tolist()
 
         self.job_df['end_time'] = self.job_df['submit_time'] + self.job_df['duration']
@@ -196,7 +198,7 @@ class GPUDemandDataset(Dataset):
     """
 
     def __init__(self, data: np.ndarray, seq_len: int = 96, pred_len: int = 24,
-                 mode: str = 'total'):
+                 mode: str = 'total', time_window_seconds: int = 3600):
         """
         Args:
             data: Time series data (can be 1D or 2D for multi-channel)
@@ -207,6 +209,7 @@ class GPUDemandDataset(Dataset):
         self.seq_len = seq_len
         self.pred_len = pred_len
         self.mode = mode
+        self.time_window_seconds = time_window_seconds
 
         # Handle both 1D and 2D data
         if data.ndim == 1:
@@ -229,25 +232,23 @@ class GPUDemandDataset(Dataset):
 
     def __getitem__(self, idx):
         # Input sequence (all channels)
-        x = self.data_scaled[idx:idx + self.seq_len, 0]  # Use first channel for input
+        x = self.data_scaled[idx:idx + self.seq_len, :]  # [seq_len, n_channels]
 
         # Output sequence (all channels)
         y = self.data_scaled[idx + self.seq_len:idx + self.seq_len + self.pred_len, :]
 
         # Time features
-        start_hour = idx % 24
-        start_day = (idx // 24) % 7
-        start_month = (idx // (24 * 30)) % 12
-
-        hours = torch.LongTensor([(start_hour + i) % 24 for i in range(self.seq_len)])
-        days = torch.LongTensor([(start_day + (start_hour + i) // 24) % 7
-                                 for i in range(self.seq_len)])
-        months = torch.LongTensor([(start_month + (start_hour + i) // (24 * 30)) % 12
-                                   for i in range(self.seq_len)])
-        is_weekend = torch.LongTensor([1 if d >= 5 else 0 for d in days.numpy()])
+        # Derive periodic calendar features from the relative time index.
+        # (Paper uses timestamps for temporal embedding; here we map discretized bins to hour/day/month.)
+        start_ts = idx * self.time_window_seconds
+        ts = [start_ts + i * self.time_window_seconds for i in range(self.seq_len)]
+        hours = torch.LongTensor([(t // 3600) % 24 for t in ts])
+        days = torch.LongTensor([(t // (24 * 3600)) % 7 for t in ts])
+        months = torch.LongTensor([(t // (30 * 24 * 3600)) % 12 for t in ts])
+        is_weekend = torch.LongTensor([1 if int(d) >= 5 else 0 for d in days])
 
         return (
-            torch.FloatTensor(x).unsqueeze(-1),  # [seq_len, 1]
+            torch.FloatTensor(x),  # [seq_len, n_channels]
             hours,
             days,
             months,

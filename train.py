@@ -67,17 +67,10 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001,
 
             predictions, diversity_loss_total = model(batch_x, hours, days, months, is_weekend)
 
-            # Handle multi-channel output
-            if batch_y.dim() == 3 and batch_y.shape[-1] > 1:
-                # Multi-channel: use first channel for loss
-                mse_loss = F.mse_loss(predictions, batch_y[:, :, 0])
-                mae_loss = F.l1_loss(predictions, batch_y[:, :, 0])
-            else:
-                # Single channel
-                if batch_y.dim() == 3:
-                    batch_y = batch_y.squeeze(-1)
-                mse_loss = F.mse_loss(predictions, batch_y)
-                mae_loss = F.l1_loss(predictions, batch_y)
+            # Multi-channel regression: predictions and targets are both
+            # shaped [batch, pred_len, n_channels].
+            mse_loss = F.mse_loss(predictions, batch_y)
+            mae_loss = F.l1_loss(predictions, batch_y)
 
             forecast_loss = mse_loss + lambda_1 * mae_loss
             loss = forecast_loss + lambda_div * diversity_loss_total
@@ -126,15 +119,10 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001,
 
                 predictions, diversity_loss_total = model(batch_x, hours, days, months, is_weekend)
 
-                # Handle multi-channel output
-                if batch_y.dim() == 3 and batch_y.shape[-1] > 1:
-                    mse_loss = F.mse_loss(predictions, batch_y[:, :, 0])
-                    mae_loss = F.l1_loss(predictions, batch_y[:, :, 0])
-                else:
-                    if batch_y.dim() == 3:
-                        batch_y = batch_y.squeeze(-1)
-                    mse_loss = F.mse_loss(predictions, batch_y)
-                    mae_loss = F.l1_loss(predictions, batch_y)
+                # Multi-channel regression: predictions and targets are both
+                # shaped [batch, pred_len, n_channels].
+                mse_loss = F.mse_loss(predictions, batch_y)
+                mae_loss = F.l1_loss(predictions, batch_y)
 
                 forecast_loss = mse_loss + lambda_1 * mae_loss
 
@@ -153,7 +141,8 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001,
         if avg_val_mse < best_val_loss:
             best_val_loss = avg_val_mse
             patience_counter = 0
-            best_model_state = model.state_dict().copy()
+            # Deep-clone best weights to avoid being affected by subsequent optimizer updates.
+            best_model_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             best_epoch = epoch + 1
 
             best_train_metrics = {
@@ -170,7 +159,9 @@ def train_model(model, train_loader, val_loader, epochs=100, lr=0.001,
             }
 
             # Save checkpoint
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            save_dir = os.path.dirname(save_path)
+            if save_dir:
+                os.makedirs(save_dir, exist_ok=True)
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': best_model_state,
@@ -238,33 +229,32 @@ def evaluate_model(model, test_loader, dataset, device='cpu', save_predictions=T
             inference_time = (time.time() - start_time) * 1000
             inference_times.append(inference_time)
 
-            pred_norm = predictions.cpu().numpy()
+            pred_norm = predictions.cpu().numpy()  # [batch, pred_len, n_channels]
+            target_norm = batch_y.cpu().numpy()   # [batch, pred_len, n_channels]
 
-            # Handle multi-channel targets
-            if batch_y.dim() == 3 and batch_y.shape[-1] > 1:
-                target_norm = batch_y[:, :, 0].cpu().numpy()  # Use first channel
-            else:
-                if batch_y.dim() == 3:
-                    batch_y = batch_y.squeeze(-1)
-                target_norm = batch_y.cpu().numpy()
+            all_predictions_norm.append(pred_norm.reshape(-1))
+            all_targets_norm.append(target_norm.reshape(-1))
 
-            all_predictions_norm.append(pred_norm)
-            all_targets_norm.append(target_norm)
+            # Inverse transform each channel independently.
+            # Flatten across (batch, pred_len, channels) for metric computation/visualization.
+            pred_original_channels = []
+            target_original_channels = []
+            n_channels = target_norm.shape[-1]
+            for c in range(n_channels):
+                pred_c = dataset.inverse_transform(pred_norm[:, :, c].reshape(-1), channel=c).flatten()
+                target_c = dataset.inverse_transform(target_norm[:, :, c].reshape(-1), channel=c).flatten()
+                pred_c = np.maximum(pred_c, 0)
+                pred_original_channels.append(pred_c)
+                target_original_channels.append(target_c)
 
-            # Inverse transform to original scale
-            for i in range(pred_norm.shape[0]):
-                pred_original = dataset.inverse_transform(pred_norm[i].reshape(-1, 1), channel=0).flatten()
-                target_original = dataset.inverse_transform(target_norm[i].reshape(-1, 1), channel=0).flatten()
-                pred_original = np.maximum(pred_original, 0)
-
-                all_predictions_original.append(pred_original)
-                all_targets_original.append(target_original)
+            all_predictions_original.append(np.concatenate(pred_original_channels, axis=0))
+            all_targets_original.append(np.concatenate(target_original_channels, axis=0))
 
     # Concatenate all predictions
     all_predictions_norm = np.concatenate(all_predictions_norm, axis=0).flatten()
     all_targets_norm = np.concatenate(all_targets_norm, axis=0).flatten()
-    all_predictions_original = np.concatenate(all_predictions_original, axis=0)
-    all_targets_original = np.concatenate(all_targets_original, axis=0)
+    all_predictions_original = np.concatenate(all_predictions_original, axis=0).flatten()
+    all_targets_original = np.concatenate(all_targets_original, axis=0).flatten()
 
     # Save predictions as .npy files
     if save_predictions:

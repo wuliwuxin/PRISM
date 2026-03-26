@@ -61,7 +61,13 @@ def run_single_experiment(data_array, channel_names, seed, pred_len,
     print(f"{'=' * 80}")
 
     # Create dataset
-    dataset = GPUDemandDataset(data_array, config.seq_len, pred_len, config.prediction_mode)
+    dataset = GPUDemandDataset(
+        data_array,
+        config.seq_len,
+        pred_len,
+        config.prediction_mode,
+        time_window_seconds=config.time_window
+    )
 
     # Create dataloaders
     train_loader, val_loader, test_loader, sizes = create_dataloaders(dataset, config, seed)
@@ -74,6 +80,7 @@ def run_single_experiment(data_array, channel_names, seed, pred_len,
     model = PRISM(
         seq_len=config.seq_len,
         pred_len=pred_len,
+        n_channels=len(channel_names),
         use_patch=config.use_patch,
         patch_len=config.patch_len,
         stride=config.stride,
@@ -195,7 +202,13 @@ def run_ablation_study(data_array, channel_names, config: ExperimentConfig,
     set_seed(42)
     pred_len = 24
 
-    dataset = GPUDemandDataset(data_array, config.seq_len, pred_len, config.prediction_mode)
+    dataset = GPUDemandDataset(
+        data_array,
+        config.seq_len,
+        pred_len,
+        config.prediction_mode,
+        time_window_seconds=config.time_window
+    )
     train_loader, val_loader, test_loader, _ = create_dataloaders(dataset, config, 42)
 
     ablation_results = []
@@ -208,6 +221,7 @@ def run_ablation_study(data_array, channel_names, config: ExperimentConfig,
         model = PRISM(
             seq_len=config.seq_len,
             pred_len=pred_len,
+            n_channels=len(channel_names),
             use_patch=use_patch,
             patch_len=16,
             stride=8,

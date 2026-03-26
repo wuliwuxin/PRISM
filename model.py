@@ -317,6 +317,7 @@ class PRISM(nn.Module):
             self,
             seq_len=96,
             pred_len=24,
+            n_channels=1,
             use_patch=True,
             patch_len=16,
             stride=8,
@@ -331,16 +332,17 @@ class PRISM(nn.Module):
 
         self.seq_len = seq_len
         self.pred_len = pred_len
+        self.n_channels = n_channels
         self.d_model = d_model
         self.use_patch = use_patch
 
         # Input embedding
         if use_patch:
-            self.patch_embedding = PatchEmbedding(patch_len, stride, d_model, in_channels=1)
+            self.patch_embedding = PatchEmbedding(patch_len, stride, d_model, in_channels=n_channels)
             self.effective_seq_len = (seq_len - patch_len) // stride + 1
         else:
             self.enc_embedding = nn.Sequential(
-                nn.Linear(1, d_model),
+                nn.Linear(n_channels, d_model),
                 nn.LayerNorm(d_model),
                 nn.Dropout(dropout)
             )
@@ -359,25 +361,17 @@ class PRISM(nn.Module):
             for _ in range(e_layers)
         ])
 
-        # Prediction head
-        if use_patch:
-            self.projection = nn.Sequential(
-                nn.Flatten(start_dim=1),
-                nn.Linear(d_model * self.effective_seq_len, d_model * 2),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(d_model * 2, d_model),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(d_model, pred_len)
-            )
-        else:
-            self.projection = nn.Sequential(
-                nn.Linear(d_model, d_model // 2),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(d_model // 2, pred_len)
-            )
+        # Prediction head (paper Phase 3):
+        # mean pooling over time -> MLP projection to the H-step horizon.
+        self.head = nn.Sequential(
+            nn.Linear(d_model, d_model * 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model * 2, d_model),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model, pred_len * n_channels),
+        )
 
         self.use_norm = True
 
@@ -469,16 +463,14 @@ class PRISM(nn.Module):
             if return_primitives:
                 primitive_weights_list.append(primitive_weights)
 
-        # Prediction
-        if self.use_patch:
-            predictions = self.projection(x_emb)
-        else:
-            x_pooled = torch.mean(x_emb, dim=1)
-            predictions = self.projection(x_pooled)
+        # Prediction (mean pooling, then MLP)
+        x_pooled = torch.mean(x_emb, dim=1)  # [batch, d_model]
+        pred_flat = self.head(x_pooled)       # [batch, pred_len * n_channels]
+        predictions = pred_flat.view(batch_size, self.pred_len, self.n_channels)
 
         # Denormalization
         if self.use_norm:
-            predictions = predictions * stdev.squeeze(1) + means.squeeze(1)
+            predictions = predictions * stdev.squeeze(1).unsqueeze(1) + means.squeeze(1).unsqueeze(1)
 
         if return_primitives:
             return predictions, diversity_loss_total, primitive_weights_list

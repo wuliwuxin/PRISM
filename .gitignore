@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# Model checkpoints (large binary files)
+checkpoints/*.pth
+checkpoints/*.pt
+checkpoints/*.ckpt
+
+# Generated outputs
+predictions/*.npy
+visualizations/
+logs/
+
+# Large data files
+data/job_info_df.csv
+
+# Claude Code memory
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

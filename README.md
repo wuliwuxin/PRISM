@@ -1,5 +1,11 @@
 # PRISM: Dynamic Primitive-Based Forecasting for Large-Scale GPU Cluster Workloads
 
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-orange)](https://pytorch.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+> **PRISM** is a dynamic primitive-based forecasting framework for large-scale GPU cluster workloads. It decomposes complex GPU demand signals into learnable primitives, enabling accurate multi-horizon forecasting across total demand, job priority, and organization dimensions.
+
 ## Architecture
 
 ![Model](./Figure/Model.png)
@@ -8,7 +14,7 @@
 
 ### Requirements
 
-```bash
+```
 Python >= 3.8
 PyTorch >= 2.0.0
 CUDA >= 11.0 (for GPU support)
@@ -17,17 +23,22 @@ CUDA >= 11.0 (for GPU support)
 ### Install Dependencies
 
 ```bash
+pip install -r requirements.txt
+```
+
+Or manually:
+
+```bash
 pip install torch>=2.0.0 torchvision torchaudio
 pip install pandas numpy scikit-learn
-pip install matplotlib seaborn
-pip install tqdm
+pip install matplotlib seaborn tqdm
 ```
 
 ### Clone Repository
 
 ```bash
 git clone https://github.com/wuliwuxin/PRISM.git
-cd prism
+cd PRISM
 ```
 
 ## 🎯 Quick Start
@@ -132,7 +143,7 @@ Predicts GPU demand for top N organizations separately.
 
 ### Example 1: Basic Training
 ```python
-from main_optimized import main
+from main import main
 from config import ExperimentConfig
 
 # Use default configuration
@@ -142,6 +153,7 @@ main(config)
 
 ### Example 2: Priority Prediction
 ```python
+from main import main
 from config import create_custom_config
 
 config = create_custom_config(
@@ -156,6 +168,9 @@ main(config)
 
 ### Example 3: Quick Test
 ```python
+from main import main
+from config import create_custom_config
+
 config = create_custom_config(
     seeds=[42],
     pred_lens=[24],
@@ -223,46 +238,53 @@ plt.title('Prediction vs Ground Truth')
 plt.show()
 ```
 
+## Data
+
+Place your data files in `data/`:
+
+| File | Description | Source |
+|------|-------------|--------|
+| `node_info_df.csv` | GPU node hardware information | [HeliosData](https://github.com/S-Lab-System-Group/HeliosData) |
+| `job_info_df.csv` | Job submission and resource records | [HeliosData](https://github.com/S-Lab-System-Group/HeliosData) |
+
+> Note: `job_info_df.csv` is large (~23MB) and excluded from this repository. Download it from the dataset links above.
+
 ## File Structure
 
 ```
-prism/
+PRISM/
 ├── config.py                    # Configuration management
 ├── data_processor.py            # Multi-mode data processing
-├── model.py                     # Model architecture
+├── model.py                     # PRISM model architecture
 ├── metrics.py                   # Evaluation metrics
 ├── train.py                     # Training & evaluation
 ├── main.py                      # Main experiment script
+├── quickstart.py                # Quick-start demo
 ├── visualize.py                 # Visualization utilities
-├── run_experiments.sh           # Automated runner
+├── run_experiments.sh           # Automated experiment runner
+├── requirements.txt             # Python dependencies
 ├── README.md                    # This file
 │
-├── data/                        # Input data
+├── data/                        # Input data (download separately)
 │   ├── node_info_df.csv
 │   └── job_info_df.csv
 │
-├── checkpoints/                 # Saved models
+├── Figure/                      # Architecture figures
+│   └── Model.png
+│
+├── checkpoints/                 # Saved model weights (auto-created)
 │   └── *.pth
 │
-├── results/                     # Experiment results
+├── results/                     # Experiment results (auto-created)
 │   ├── prism_*_results.csv
-│   ├── prism_*_ablation.csv
-│   └── summary_*.txt
+│   └── prism_*_ablation.csv
 │
-├── predictions/                 # Saved predictions (.npy)
+├── predictions/                 # Saved predictions (auto-created)
 │   ├── *_predictions.npy
-│   ├── *_targets.npy
-│   ├── *_predictions_norm.npy
-│   └── *_targets_norm.npy
+│   └── *_targets.npy
 │
-├── visualizations/              # Generated plots
-│   ├── *_waveform.png
-│   ├── *_scatter.png
-│   ├── metrics_comparison.png
-│   └── ablation_comparison.png
-│
-└── logs/                        # Training logs
-    └── *.log
+└── visualizations/              # Generated plots (auto-created)
+    └── *.png
 ```
 
 ## Advanced Usage
@@ -270,7 +292,7 @@ prism/
 ### Custom Model Configuration
 
 ```python
-from prism_model import PRISM
+from model import PRISM
 
 model = PRISM(
     seq_len=96,           # 4 days input
@@ -303,7 +325,7 @@ config = create_custom_config(
 
 ```python
 import torch
-from prism_model import PRISM
+from model import PRISM
 
 # Load model
 checkpoint = torch.load('checkpoints/prism_total_seed42_predlen24.pth')
@@ -317,17 +339,17 @@ with torch.no_grad():
     predictions, _ = model(x, hours, days, months, is_weekend)
 ```
 
-<!-- 
-## 📝 Citation
+## Citation
+
+If you find this work useful, please consider citing our paper:
 
 ```bibtex
-@article{prism2025,
-  title={PRISM: Primitive-based Recurrent Inference for Sequence Modeling},
-  author={Your Name},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
+@inproceedings{prism2025,
+  title={PRISM: Dynamic Primitive-Based Forecasting for Large-Scale GPU Cluster Workloads},
+  author={Wu, Xin and others},
   year={2025}
 }
-``` -->
+```
 ## Contact
 
 If you have any questions or want to use the code, please contact wu1351658806@163.com.

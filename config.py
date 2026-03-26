@@ -22,9 +22,6 @@ class ExperimentConfig:
     # Prediction mode: 'total', 'priority', 'organization'
     prediction_mode: str = 'total'
 
-    # Ablation study flag
-    run_ablation: bool = False  # Default: do not run ablation
-
     # Data configuration
     seq_len: int = 96  # Input sequence length (4 days)
     time_window: int = 3600  # Time window in seconds (1 hour)
@@ -121,7 +118,6 @@ class ExperimentConfig:
         print(f"  Prediction Lengths: {self.pred_lens} hours")
         print(f"  GPU IDs: {self.gpu_ids}")
         print(f"  Prediction Mode: {self.prediction_mode}")
-        print(f"  Run Ablation Study: {'Yes' if self.run_ablation else 'No'}")
 
         print("\nData Configuration:")
         print(f"  Sequence Length: {self.seq_len}")
@@ -147,26 +143,8 @@ class ExperimentConfig:
         print("\n" + "=" * 80)
 
 
-@dataclass
-class AblationConfig:
-    """Configuration for ablation studies"""
-    # Ablation variants: (name, d_model, n_primitives, use_patch, description)
-    variants: List[tuple] = field(default_factory=lambda: [
-        ("PRISM-Full", 256, 16, True, "Full model"),
-        ("PRISM-NoPatch", 256, 16, False, "Without patch embedding"),
-        ("PRISM-Small", 128, 8, True, "Smaller model (d=128, prim=8)"),
-        ("PRISM-Large", 512, 32, True, "Larger model (d=512, prim=32)"),
-        ("PRISM-FewPrim", 256, 4, True, "Few primitives (prim=4)"),
-    ])
-
-    epochs: int = 50
-    patience: int = 15
-    lr: float = 0.001
-
-
 # Default configurations
 DEFAULT_CONFIG = ExperimentConfig()
-DEFAULT_ABLATION_CONFIG = AblationConfig()
 
 
 def create_custom_config(**kwargs) -> ExperimentConfig:

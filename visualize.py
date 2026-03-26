@@ -15,17 +15,16 @@ from train import train_model, evaluate_model
 from torch.utils.data import DataLoader
 
 
-def quick_start_example(mode='total', pred_len=24, run_ablation=False):
+def quick_start_example(mode='total', pred_len=24):
     """
     Quick start example with minimal configuration
 
     Args:
         mode: Prediction mode ('total', 'priority', 'organization')
         pred_len: Prediction length in hours
-        run_ablation: Whether to run ablation study
     """
     print("=" * 80)
-    print(f"PRISM Quick Start - Mode: {mode}, Prediction: {pred_len}h, Ablation: {run_ablation}")
+    print(f"PRISM Quick Start - Mode: {mode}, Prediction: {pred_len}h")
     print("=" * 80)
 
     # 1. Create minimal configuration
@@ -227,14 +226,10 @@ def main():
                        help='Prediction mode')
     parser.add_argument('--pred-len', type=int, default=24,
                        help='Prediction length in hours')
-    parser.add_argument('--ablation', action='store_true',
-                       help='Run ablation study (default: False)')
-
     args = parser.parse_args()
 
     # Run quick start
-    quick_start_example(mode=args.mode, pred_len=args.pred_len,
-                       run_ablation=args.ablation)
+    quick_start_example(mode=args.mode, pred_len=args.pred_len)
 
 
 if __name__ == "__main__":

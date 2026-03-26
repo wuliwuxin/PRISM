@@ -189,7 +189,6 @@ main(config)
 - `results/prism_total_results.csv` - Main experiment results
 - `results/prism_priority_results.csv` - Priority mode results
 - `results/prism_organization_results.csv` - Organization mode results
-- `results/prism_*_ablation.csv` - Ablation study results
 
 #### Predictions (NumPy)
 - `predictions/*_predictions.npy` - Model predictions
@@ -201,7 +200,6 @@ main(config)
 - `visualizations/*_waveform.png` - Time series comparison
 - `visualizations/*_scatter.png` - Scatter plot with error distribution
 - `visualizations/metrics_comparison.png` - Performance metrics
-- `visualizations/ablation_comparison.png` - Ablation study results
 
 #### Models
 - `checkpoints/prism_*_seed*_predlen*.pth` - Trained models
@@ -276,8 +274,7 @@ PRISM/
 │   └── *.pth
 │
 ├── results/                     # Experiment results (auto-created)
-│   ├── prism_*_results.csv
-│   └── prism_*_ablation.csv
+│   └── prism_*_results.csv
 │
 ├── predictions/                 # Saved predictions (auto-created)
 │   ├── *_predictions.npy
@@ -344,10 +341,11 @@ with torch.no_grad():
 If you find this work useful, please consider citing our paper:
 
 ```bibtex
-@inproceedings{prism2025,
+@inproceedings{WuPrism2026,
   title={PRISM: Dynamic Primitive-Based Forecasting for Large-Scale GPU Cluster Workloads},
-  author={Wu, Xin and others},
-  year={2025}
+  author={Wu, Xin and Teng, Fei and Li, Xingwang and Zheng, Bin and Duan, Qiang},
+  booktitle={Proceedings of the 63rd ACM/EEE Design Automation Conference (DAC‘26)},
+  year={2026}
 }
 ```
 ## Contact

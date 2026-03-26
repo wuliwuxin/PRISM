@@ -24,7 +24,6 @@ PRED_LENS="6 12 24 48"
 GPUS="0 1"
 EPOCHS=100
 BATCH_SIZE=128
-ABLATION=false  # Default: do not run ablation
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -65,10 +64,6 @@ while [[ $# -gt 0 ]]; do
             BATCH_SIZE="$2"
             shift 2
             ;;
-        --ablation)
-            ABLATION=true
-            shift
-            ;;
         --help)
             echo "Usage: ./run_experiments.sh [OPTIONS]"
             echo ""
@@ -79,13 +74,11 @@ while [[ $# -gt 0 ]]; do
             echo "  --gpus GPU...        GPU IDs (default: 0 1)"
             echo "  --epochs N           Number of epochs (default: 100)"
             echo "  --batch-size N       Batch size (default: 128)"
-            echo "  --ablation           Run ablation study (default: false)"
             echo "  --help               Show this help message"
             echo ""
             echo "Examples:"
             echo "  ./run_experiments.sh --mode total --seeds 42 2024 --pred-lens 24 48"
             echo "  ./run_experiments.sh --mode priority --gpus 0 --epochs 50"
-            echo "  ./run_experiments.sh --mode total --ablation"
             exit 0
             ;;
         *)
@@ -104,7 +97,6 @@ echo "  Prediction Lengths: $PRED_LENS"
 echo "  GPUs: $GPUS"
 echo "  Epochs: $EPOCHS"
 echo "  Batch Size: $BATCH_SIZE"
-echo "  Ablation Study: $ABLATION"
 
 # Check Python
 if ! command -v python &> /dev/null; then
@@ -160,11 +152,6 @@ CMD="$CMD --gpus $GPUS"
 CMD="$CMD --epochs $EPOCHS"
 CMD="$CMD --batch_size $BATCH_SIZE"
 
-# Add ablation flag if enabled
-if [ "$ABLATION" = true ]; then
-    CMD="$CMD --ablation"
-fi
-
 echo "Command: $CMD"
 echo ""
 
@@ -199,7 +186,6 @@ if [ $EXIT_CODE -eq 0 ]; then
     echo -e "================================================================================"
     echo "Results:"
     echo "  - results/prism_${MODE}_results.csv"
-    echo "  - results/prism_${MODE}_ablation.csv"
     echo "  - results/summary_${MODE}.txt"
     echo ""
     echo "Visualizations:"

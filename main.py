@@ -15,7 +15,7 @@ import argparse
 
 warnings.filterwarnings('ignore')
 
-from config import ExperimentConfig, AblationConfig, create_custom_config
+from config import ExperimentConfig, create_custom_config
 from data_processor import GPUDataProcessor, GPUDemandDataset, prepare_datasets
 from model import PRISM, count_parameters
 from train import train_model, evaluate_model
@@ -192,97 +192,6 @@ def run_single_experiment(data_array, channel_names, seed, pred_len,
     return result
 
 
-def run_ablation_study(data_array, channel_names, config: ExperimentConfig,
-                      ablation_config: AblationConfig, device):
-    """Run ablation study"""
-    print("\n" + "=" * 80)
-    print("ABLATION STUDY")
-    print("=" * 80)
-
-    set_seed(42)
-    pred_len = 24
-
-    dataset = GPUDemandDataset(
-        data_array,
-        config.seq_len,
-        pred_len,
-        config.prediction_mode,
-        time_window_seconds=config.time_window
-    )
-    train_loader, val_loader, test_loader, _ = create_dataloaders(dataset, config, 42)
-
-    ablation_results = []
-
-    for variant_name, d_model, n_primitives, use_patch, description in ablation_config.variants:
-        print(f"\n{'=' * 80}")
-        print(f"{variant_name}: {description}")
-        print(f"{'=' * 80}")
-
-        model = PRISM(
-            seq_len=config.seq_len,
-            pred_len=pred_len,
-            n_channels=len(channel_names),
-            use_patch=use_patch,
-            patch_len=16,
-            stride=8,
-            d_model=d_model,
-            n_heads=8,
-            e_layers=3,
-            d_ff=d_model * 4,
-            n_primitives=n_primitives,
-            dropout=0.1
-        )
-
-        total_params, _ = count_parameters(model)
-        print(f"Parameters: {total_params / 1e6:.2f}M")
-
-        save_path = os.path.join(config.checkpoint_dir, f'ablation_{variant_name}.pth')
-
-        train_start = time.time()
-        best_epoch, _ = train_model(
-            model, train_loader, val_loader,
-            epochs=ablation_config.epochs,
-            lr=ablation_config.lr,
-            device=device,
-            patience=ablation_config.patience,
-            save_path=save_path,
-            lambda_1=1,
-            lambda_div=1,
-            # lambda_1=0.1,
-            # lambda_div=0.01,
-            verbose=False
-        )
-        train_time = time.time() - train_start
-
-        exp_name = f'ablation_{variant_name}'
-        eval_results = evaluate_model(
-            model, test_loader, dataset, device=device,
-            save_predictions=True,
-            save_dir=config.predictions_dir,
-            exp_name=exp_name
-        )
-
-        print(f"  MAE: {eval_results['mae_original']:.4f} GPUs, R²: {eval_results['r2']:.6f}")
-
-        ablation_results.append({
-            'config_name': variant_name,
-            'description': description,
-            'd_model': d_model,
-            'n_primitives': n_primitives,
-            'use_patch': use_patch,
-            'parameters_M': total_params / 1e6,
-            'test_mae': eval_results['mae'],
-            'test_mae_original': eval_results['mae_original'],
-            'test_rmse_original': eval_results['rmse_original'],
-            'test_mape': eval_results['mape'],
-            'test_r2': eval_results['r2'],
-            'training_time_min': train_time / 60,
-            'predictions_file': eval_results['predictions_file']
-        })
-
-    return ablation_results
-
-
 def main(custom_config=None):
     """Main experiment pipeline"""
     print("=" * 80)
@@ -372,30 +281,6 @@ def main(custom_config=None):
             import traceback
             traceback.print_exc()
 
-    # Run ablation study (optional)
-    if len(results) > 0 and config.run_ablation:
-        print(f"\n[5/5] Running ablation study...")
-        device = config.get_device(config.gpu_ids[0])
-        ablation_config = AblationConfig()
-
-        try:
-            ablation_results = run_ablation_study(
-                data_array, channel_names, config, ablation_config, device
-            )
-
-            if len(ablation_results) > 0:
-                ablation_df = pd.DataFrame(ablation_results)
-                ablation_file = os.path.join(config.results_dir,
-                                            f'prism_{config.prediction_mode}_ablation.csv')
-                ablation_df.to_csv(ablation_file, index=False)
-                print(f"\n✓ Ablation results saved: {ablation_file}")
-        except Exception as e:
-            print(f"\n✗ Ablation failed: {e}")
-    elif config.run_ablation:
-        print("\n⚠ Skipping ablation study (no main results)")
-    else:
-        print("\n⏭ Skipping ablation study (disabled)")
-
     # Summary
     print("\n" + "=" * 80)
     print("RESULTS SUMMARY")
@@ -451,9 +336,6 @@ if __name__ == "__main__":
                        help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=128,
                        help='Batch size')
-    parser.add_argument('--ablation', action='store_true',
-                       help='Run ablation study (default: False)')
-
     args = parser.parse_args()
 
     # Create custom configuration
@@ -464,7 +346,6 @@ if __name__ == "__main__":
         gpu_ids=args.gpus,
         epochs=args.epochs,
         batch_size=args.batch_size,
-        run_ablation=args.ablation
     )
 
     try:

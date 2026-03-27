@@ -4,12 +4,12 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-orange)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-> **PRISM** is a dynamic primitive-based forecasting framework for large-scale GPU cluster workloads. It decomposes complex GPU demand signals into learnable primitives, enabling accurate multi-horizon forecasting across total demand, job priority, and organization dimensions.
+**PRISM** is a dynamic primitive-based forecasting framework for large-scale GPU cluster workloads. It decomposes complex GPU demand signals into learnable primitives, enabling accurate multi-horizon forecasting across total demand, job priority, and organization dimensions.
 
 **Paper**: [arXiv:2603.25378](https://arxiv.org/abs/2603.25378) (preprint)  
 *Final publication details to appear*[^1]
 
-[^1]: Accepted for publication in the *Proceedings of the 63rd ACM/IEEE Design Automation Conference (DAC ’26)*. DOI to be assigned.
+> [^1]: Accepted for publication in the *Proceedings of the 63rd ACM/IEEE Design Automation Conference (DAC ’26)*. DOI to be assigned.
 
 ## Architecture
 

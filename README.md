@@ -6,6 +6,11 @@
 
 > **PRISM** is a dynamic primitive-based forecasting framework for large-scale GPU cluster workloads. It decomposes complex GPU demand signals into learnable primitives, enabling accurate multi-horizon forecasting across total demand, job priority, and organization dimensions.
 
+**Paper**: [arXiv:2603.25378](https://arxiv.org/abs/2603.25378) (preprint)  
+*Final publication details to appear*[^1]
+
+[^1]: Accepted for publication in the *Proceedings of the 63rd ACM/IEEE Design Automation Conference (DAC ’26)*. DOI to be assigned.
+
 ## Architecture
 
 ![Model](./Figure/Model.png)
@@ -193,7 +198,7 @@ If you find this work useful, please consider citing our paper:
 @inproceedings{WuPrism2026,
   title={PRISM: Dynamic Primitive-Based Forecasting for Large-Scale GPU Cluster Workloads},
   author={Wu, Xin and Teng, Fei and Li, Xingwang and Zheng, Bin and Duan, Qiang},
-  booktitle={Proceedings of the 63rd ACM/EEE Design Automation Conference (DAC‘26)},
+  booktitle={Proceedings of the 63rd ACM/IEEE Design Automation Conference (DAC‘26)},
   year={2026}
 }
 ```
@@ -201,23 +206,6 @@ If you find this work useful, please consider citing our paper:
 ## Contact
 
 If you have any questions or want to use the code, please contact wu1351658806@163.com.
-
-## Acknowledgement
-
-We appreciate the following github repos a lot for their valuable code base or datasets:
-
-https://github.com/S-Lab-System-Group/HeliosData
-
-https://github.com/Azure/AzurePublicDataset/
-
-https://github.com/GestaltCogTeam/BasicTS
-
-https://github.com/thuml/Time-Series-Library
-
-https://github.com/MachineLearningSystem/26ASPLOS-Spot
-
-https://github.com/EdgeBigBang/KDD25_MetaEformer
-
 
 ## Contributing
 
